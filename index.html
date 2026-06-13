@@ -143,6 +143,7 @@ td input { background: var(--surface); border: 1px solid var(--red); color: var(
     <select id="f-year" onchange="filter()"><option value="">所有年份</option></select>
     <select id="f-mfr" onchange="filter()"><option value="">所有制造商</option></select>
     <select id="f-brand" onchange="filter()"><option value="">所有品牌</option></select>
+    <select id="f-special" onchange="filter()"><option value="">所有Special</option></select>
     <button class="btn" onclick="toggleAdd()">+ 添加</button>
     <button class="btn sec" onclick="exportCSV()">导出 CSV</button>
     <span class="count-label" id="count"></span>
@@ -200,6 +201,7 @@ function buildFilters() {
   add('f-year',[...new Set(rows.map(r=>r['Year']).filter(Boolean))].sort((a,b)=>b-a));
   add('f-mfr',[...new Set(rows.map(r=>r['Manufacturer']).filter(Boolean))].sort());
   add('f-brand',[...new Set(rows.map(r=>r['Brand']).filter(Boolean))].sort());
+  add('f-special',[...new Set(rows.map(r=>r['Special']).filter(Boolean))].sort());
 }
 
 function render() {
@@ -242,11 +244,13 @@ function filter() {
   const q=document.getElementById('search').value.toLowerCase();
   const t=document.getElementById('f-type').value, y=document.getElementById('f-year').value;
   const m=document.getElementById('f-mfr').value, b=document.getElementById('f-brand').value;
+  const sp=document.getElementById('f-special').value;
   vis=rows.filter(r=>{
     if(t&&r['Type']!==t)return false;
     if(y&&String(r['Year'])!==String(y))return false;
     if(m&&r['Manufacturer']!==m)return false;
     if(b&&r['Brand']!==b)return false;
+    if(sp&&r['Special']!==sp)return false;
     if(q&&![r['Name'],r['Series'],r['Brand'],r['Manufacturer'],r['Special']].join(' ').toLowerCase().includes(q))return false;
     return true;
   });
