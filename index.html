@@ -101,7 +101,7 @@ thead th {
   text-transform: uppercase; letter-spacing: 0.8px; padding: 8px 10px;
   border-bottom: 2px solid var(--red); text-align: left; white-space: nowrap;
   cursor: pointer; user-select: none;
-  position: sticky; top: 0; z-index: 98;
+
 }
 thead th:hover { color: var(--text); }
 thead th.asc::after { content: ' ↑'; color: var(--red); }
@@ -342,12 +342,7 @@ function render() {
   document.getElementById('s-sold').textContent=rows.reduce((s,r)=>s+(parseFloat(r['Sold Amount'])||0),0);
   updateStats();
   document.getElementById('count').textContent=`Showing ${vis.length} / ${rows.length}`;
-  // Dynamically fix thead sticky top
-  const headerH = document.querySelector('header').offsetHeight;
-  const controlsH = document.querySelector('.controls').offsetHeight;
-  document.querySelectorAll('thead th').forEach(th => {
-    th.style.top = (headerH + controlsH) + 'px';
-  });
+
 }
 
 function updateStats() {
@@ -378,22 +373,70 @@ function delRow(id) {
 }
 
 function insertRowBelow(refRow) {
-  const idx = rows.indexOf(refRow);
-  const newRow = Object.fromEntries(H.map(h=>[h,'']));
+  const f = document.getElementById('add-form');
+  f.innerHTML = '';
+  f._insertAfter = refRow;
+
+  const title = document.createElement('span');
+  title.textContent = 'Insert below: ' + (refRow['Name']||'this row');
+  title.style.cssText = 'font-size:11px;color:var(--yellow);font-weight:700;width:100%;';
+  f.appendChild(title);
+
+  ['Brand','Name','Type','Series','Special','Manufacturer','Year','Number','Date','Price $','Amount'].forEach(h => {
+    const g = document.createElement('div'); g.className='field-group';
+    const l = document.createElement('label'); l.textContent = h;
+    const inp = document.createElement('input'); inp.id='nf-'+h; inp.placeholder=h;
+    // Pre-fill Brand and Type from ref row
+    if (h==='Brand' || h==='Type' || h==='Manufacturer') inp.value = refRow[h]||'';
+    g.appendChild(l); g.appendChild(inp); f.appendChild(g);
+  });
+
+  const a = document.createElement('button'); a.className='btn'; a.textContent='✓ Insert';
+  a.onclick = confirmInsert;
+  const c = document.createElement('button'); c.className='btn sec'; c.textContent='Cancel';
+  c.onclick = () => { f.classList.remove('on'); f._insertAfter = null; };
+  f.appendChild(a); f.appendChild(c);
+  f.classList.add('on');
+  document.getElementById('nf-Name').focus();
+}
+
+async function confirmInsert() {
+  const f = document.getElementById('add-form');
+  const refRow = f._insertAfter;
+  const newRow = {};
+  H.forEach(h => { const el = document.getElementById('nf-'+h); newRow[h] = el ? el.value : ''; });
   newRow._id = Date.now();
-  newRow._sheetRow = null; // new row, no sheet position yet
-  rows.splice(idx + 1, 0, newRow);
+
+  // Find insert position in rows array
+  const idx = refRow ? rows.indexOf(refRow) : -1;
+  if (idx >= 0) {
+    rows.splice(idx + 1, 0, newRow);
+  } else {
+    rows.unshift(newRow);
+  }
+
+  f.classList.remove('on');
+  f._insertAfter = null;
+
+  // Append to Google Sheets at the correct position
+  await appendRowToSheets(newRow, refRow ? refRow._sheetRow : null);
   filter();
-  // Find the new row's first editable cell and start editing
-  setTimeout(() => {
-    const trs = document.getElementById('tbody').querySelectorAll('tr');
-    const visIdx = vis.indexOf(newRow);
-    if (visIdx >= 0 && trs[visIdx]) {
-      const firstTd = trs[visIdx].querySelectorAll('td.edit')[1]; // Name column
-      if (firstTd) firstTd.dispatchEvent(new MouseEvent('dblclick'));
-    }
-  }, 50);
-  toast('Row inserted — fill in details and save', 'success');
+}
+
+async function appendRowToSheets(newRow, afterSheetRow) {
+  try {
+    const fullRow = allHeaders.map(h => newRow[h] ?? '');
+    await fetch(API_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify({ action: 'insert', afterRow: afterSheetRow, row: fullRow }),
+    });
+    toast('Saved to Sheets ✓', 'success');
+    // Reload to get correct _sheetRow for new row
+    setTimeout(() => { loadFromSheets(); }, 2000);
+  } catch(e) {
+    toast('Save failed', 'error');
+  }
 }
 
 function filter() {
