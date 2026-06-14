@@ -254,7 +254,8 @@ async function loadFromSheets() {
 async function saveCell(row, h, value) {
   const sheetRow = row._sheetRow;
   const colIdx = allHeaders.indexOf(h);
-  if (sheetRow == null || colIdx === -1) return;
+  console.log('saveCell called, sheetRow:', sheetRow, 'colIdx:', colIdx, 'allHeaders length:', allHeaders.length);
+  if (sheetRow == null || colIdx === -1) { console.log('EARLY RETURN - sheetRow:', sheetRow, 'colIdx:', colIdx); return; }
   try {
     console.log('POST to:', API_URL, { row: sheetRow, col: colIdx + 1, value });
     await fetch(API_URL, {
