@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🚗 Hot Wheels Collection</title>
+<title>🚗 Diecast Collection</title>
 <style>
 :root {
   --bg: #0f0f13; --surface: #1a1a24; --surface2: #22222f;
@@ -99,6 +99,7 @@ thead th {
   text-transform: uppercase; letter-spacing: 0.8px; padding: 8px 10px;
   border-bottom: 2px solid var(--red); text-align: left; white-space: nowrap;
   cursor: pointer; user-select: none;
+  position: sticky; top: 101px; z-index: 98;
 }
 thead th:hover { color: var(--text); }
 thead th.asc::after { content: ' ↑'; color: var(--red); }
@@ -109,6 +110,10 @@ td {
   padding: 5px 10px; border-bottom: 1px solid var(--border);
   white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis;
   vertical-align: middle;
+}
+td.col-name {
+  white-space: normal; min-width: 240px; max-width: 360px;
+  overflow: visible; text-overflow: unset; line-height: 1.4;
 }
 td.edit { cursor: pointer; }
 td.edit:hover { background: rgba(255,255,255,0.04); }
@@ -148,43 +153,43 @@ td input { background: var(--surface); border: 1px solid var(--red); color: var(
 <div id="login-screen">
   <div class="login-box">
     <div class="lock">🔒</div>
-    <h2>Hot Wheels Collection</h2>
-    <p>请输入密码以访问收藏清单</p>
+    <h2>Diecast Collection</h2>
+    <p>Enter password to access your collection</p>
     <input type="password" id="pw" placeholder="••••••••" autocomplete="current-password">
-    <button onclick="tryLogin()">进入</button>
+    <button onclick="tryLogin()">Enter</button>
     <div class="login-error" id="pw-err"></div>
   </div>
 </div>
 
 <div id="loading-screen">
   <div class="spinner"></div>
-  <div class="loading-text" id="loading-text">正在从 Google Sheets 加载数据…</div>
+  <div class="loading-text" id="loading-text">Loading data from Google Sheets…</div>
 </div>
 
 <div id="app">
   <header>
-    <div class="logo">🚗 Hot<span>Wheels</span></div>
+    <div class="logo">🚗 Die<span>cast</span></div>
     <div class="stats">
-      <div class="stat">收藏 <b id="s-total">0</b></div>
-      <div class="stat">库存 <b id="s-stock">0</b></div>
-      <div class="stat">成本 <b id="s-cost">$0</b></div>
-      <div class="stat">已售 <b id="s-sold">0</b></div>
-      <div class="stat">收入 <b id="s-income">$0</b></div>
+      <div class="stat">Total <b id="s-total">0</b></div>
+      <div class="stat">In Stock <b id="s-stock">0</b></div>
+      <div class="stat">Cost <b id="s-cost">$0</b></div>
+      <div class="stat">Sold <b id="s-sold">0</b></div>
+      <div class="stat">Income <b id="s-income">$0</b></div>
     </div>
     <div class="header-btns">
-      <button class="logout-btn" onclick="logout()">退出</button>
+      <button class="logout-btn" onclick="logout()">Logout</button>
     </div>
   </header>
 
   <div class="controls">
-    <input type="search" id="search" placeholder="🔍 搜索名称、系列…" oninput="filter()">
-    <select id="f-type" onchange="filter()"><option value="">所有类型</option></select>
-    <select id="f-year" onchange="filter()"><option value="">所有年份</option></select>
-    <select id="f-mfr" onchange="filter()"><option value="">所有制造商</option></select>
-    <select id="f-brand" onchange="filter()"><option value="">所有品牌</option></select>
-    <select id="f-special" onchange="filter()"><option value="">所有Special</option></select>
-    <button class="btn" onclick="toggleAdd()">+ 添加</button>
-    <button class="btn sec" onclick="exportCSV()">导出 CSV</button>
+    <input type="search" id="search" placeholder="🔍 Search name, series…" oninput="filter()">
+    <select id="f-type" onchange="filter()"><option value="">All Types</option></select>
+    <select id="f-year" onchange="filter()"><option value="">All Years</option></select>
+    <select id="f-mfr" onchange="filter()"><option value="">All Makes</option></select>
+    <select id="f-brand" onchange="filter()"><option value="">All Brands</option></select>
+    <select id="f-special" onchange="filter()"><option value="">All Specials</option></select>
+    <button class="btn" onclick="toggleAdd()">+ Add</button>
+    <button class="btn sec" onclick="exportCSV()">Export CSV</button>
     <span class="count-label" id="count"></span>
   </div>
 
@@ -210,7 +215,7 @@ async function sha256(s) {
 async function tryLogin() {
   const h = await sha256(document.getElementById('pw').value);
   if (h === PASS_HASH) { sessionStorage.setItem('hw_ok', h); showLoading(); loadFromSheets(); }
-  else { const e=document.getElementById('pw-err'); e.textContent='密码错误'; setTimeout(()=>e.textContent='',2000); document.getElementById('pw').value=''; }
+  else { const e=document.getElementById('pw-err'); e.textContent='Incorrect password'; setTimeout(()=>e.textContent='',2000); document.getElementById('pw').value=''; }
 }
 function logout() { sessionStorage.removeItem('hw_ok'); location.reload(); }
 document.getElementById('pw').addEventListener('keydown', e=>{ if(e.key==='Enter') tryLogin(); });
@@ -245,7 +250,7 @@ async function loadFromSheets() {
     filter();
     showApp();
   } catch(e) {
-    document.getElementById('loading-text').textContent = '加载失败，请刷新重试';
+    document.getElementById('loading-text').textContent = 'Failed to load, please refresh';
     console.error(e);
   }
 }
@@ -261,11 +266,11 @@ async function saveCell(row, h, value) {
       mode: 'no-cors',
       body: JSON.stringify({ row: sheetRow, col: colIdx + 1, value }),
     });
-    toast('已保存 ✓', 'success');
+    toast('Saved ✓', 'success');
     // Wait 1.5s for Sheets to recalculate, then refresh the row
     setTimeout(() => refreshRow(row), 1500);
   } catch(e) {
-    toast('保存失败', 'error');
+    toast('Save failed', 'error');
   }
 }
 
@@ -287,7 +292,7 @@ function buildHead() {
   document.getElementById('thead').innerHTML = '';
   const tr = document.createElement('tr');
   H.forEach((h,i)=>{ const th=document.createElement('th'); th.textContent=h; th.onclick=()=>sortBy(i); tr.appendChild(th); });
-  const th=document.createElement('th'); th.textContent='操作'; tr.appendChild(th);
+  const th=document.createElement('th'); th.textContent='Action'; tr.appendChild(th);
   document.getElementById('thead').appendChild(tr);
 }
 
@@ -312,7 +317,7 @@ function render() {
   vis.forEach(row=>{
     const tr=document.createElement('tr');
     H.forEach(h=>{
-      const td=document.createElement('td'); td.title=String(row[h]??'');
+      const td=document.createElement('td'); td.title=String(row[h]??''); if(h==='Name') td.classList.add('col-name');
       if(h==='Special'&&row[h]){
         const amount = parseFloat(row['Amount'])||0;
         if (amount > 0) {
@@ -325,7 +330,7 @@ function render() {
       tr.appendChild(td);
     });
     const td=document.createElement('td');
-    const b=document.createElement('button'); b.className='btn del'; b.textContent='删'; b.style.cssText='font-size:10px;padding:2px 6px'; b.onclick=()=>delRow(row._id);
+    const b=document.createElement('button'); b.className='btn del'; b.textContent='Del'; b.style.cssText='font-size:10px;padding:2px 6px'; b.onclick=()=>delRow(row._id);
     td.appendChild(b); tr.appendChild(td); tb.appendChild(tr);
   });
   document.getElementById('s-total').textContent=rows.length;
@@ -333,7 +338,7 @@ function render() {
   document.getElementById('s-cost').textContent='$'+rows.reduce((s,r)=>s+(parseFloat(r['Cost $'])||0),0).toFixed(0);
   document.getElementById('s-sold').textContent=rows.reduce((s,r)=>s+(parseFloat(r['Sold Amount'])||0),0);
   updateStats();
-  document.getElementById('count').textContent=`显示 ${vis.length} / ${rows.length} 条`;
+  document.getElementById('count').textContent=`Showing ${vis.length} / ${rows.length}`;
 }
 
 function updateStats() {
@@ -359,8 +364,8 @@ function startEdit(td,row,h) {
 }
 
 function delRow(id) {
-  if(!confirm('确定删除？'))return;
-  rows=rows.filter(r=>r._id!==id); filter(); toast('已删除（仅本地）','success');
+  if(!confirm('Delete this row?'))return;
+  rows=rows.filter(r=>r._id!==id); filter(); toast('Deleted (local only)','success');
 }
 
 function filter() {
@@ -399,14 +404,14 @@ function toggleAdd() {
     const inp=document.createElement('input'); inp.id='nf-'+h; inp.placeholder=h;
     g.appendChild(l); g.appendChild(inp); f.appendChild(g);
   });
-  const a=document.createElement('button'); a.className='btn'; a.textContent='✓ 确认'; a.onclick=addRow; f.appendChild(a);
-  const c=document.createElement('button'); c.className='btn sec'; c.textContent='取消'; c.onclick=()=>f.classList.remove('on'); f.appendChild(c);
+  const a=document.createElement('button'); a.className='btn'; a.textContent='✓ Confirm'; a.onclick=addRow; f.appendChild(a);
+  const c=document.createElement('button'); c.className='btn sec'; c.textContent='Cancel'; c.onclick=()=>f.classList.remove('on'); f.appendChild(c);
   f.classList.add('on');
 }
 
 function addRow() {
   const r={}; H.forEach(h=>{const el=document.getElementById('nf-'+h);r[h]=el?el.value:'';}); r._id=Date.now();
-  rows.unshift(r); document.getElementById('add-form').classList.remove('on'); filter(); toast('已添加（仅本地，请刷新同步）','success');
+  rows.unshift(r); document.getElementById('add-form').classList.remove('on'); filter(); toast('Added (local only, refresh to sync)','success');
 }
 
 function exportCSV() {
